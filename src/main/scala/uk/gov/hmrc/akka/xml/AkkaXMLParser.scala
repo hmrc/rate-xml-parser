@@ -93,11 +93,11 @@ object AkkaXMLParser {
         var isCharacterBuffering = false
         var inputChunkLength = 0
         var previousChunkSize = 0
+        var streamBuffer = ArrayBuffer[Byte]()
 
 
         val node = ArrayBuffer[String]()
         //val nodesToProcess = mutable.Set[List[String]]()
-        var streamBuffer = ArrayBuffer[Byte]()
         val incompleteBytes = ArrayBuffer[Byte]()
         val completedInstructions = mutable.Set[XMLInstruction]()
         val xmlElements = mutable.Set[XMLElement]()
@@ -220,17 +220,19 @@ object AkkaXMLParser {
         @tailrec private def advanceParser(): Unit = {
           if (parser.hasNext) {
             val event = parser.next()
+
             val (start, end) = getBounds(parser)
             event match {
               case AsyncXMLStreamReader.EVENT_INCOMPLETE =>
                 if (chunk.length > 0) {
                   val lastCompleteElementInChunk = chunk.slice(0, start)
-                  incompleteBytes ++= chunk.slice(lastCompleteElementInChunk.length, chunk.length)
+                  incompleteBytes ++= chunk.slice(start, chunk.length)
 
                   if (lastCompleteElementInChunk.length == 0 && (end - start) > chunk.length)
                     streamBuffer.clear()
                   else
                     streamBuffer ++= lastCompleteElementInChunk.slice(chunkOffset, lastCompleteElementInChunk.length)
+
 
                   incompleteBytesLength = incompleteBytes.length
                 }
@@ -247,8 +249,9 @@ object AkkaXMLParser {
                     e.xPath match {
                       case path if path == node.toList =>
                         val input = getUpdatedElement(e.xPath, e.attributes, e.value)(parser).getBytes
-                        streamBuffer = getStreamBuffer
-                        streamBuffer ++= insertBytesInChunk(chunk, chunkOffset, start, input)
+                        streamBuffer = if (e.isUpsert) getStreamBuffer
+                        else getStreamBuffer.slice(0, streamBuffer.length - incompleteBytesLength)
+                        streamBuffer ++= extractBytes(chunk, chunkOffset, start, input)
                         incompleteBytesLength = 0
                         chunkOffset = end
                       case _ =>
@@ -266,9 +269,10 @@ object AkkaXMLParser {
                     }
 
                   case e: XMLDelete if e.xPath == node.slice(0, e.xPath.length) =>
-                    streamBuffer = getStreamBuffer
-                    streamBuffer ++= insertBytesInChunk(chunk, chunkOffset, start, Array.empty[Byte])
+                    streamBuffer = getStreamBuffer.slice(0, streamBuffer.length - incompleteBytesLength)
+                    streamBuffer ++= extractBytes(chunk, chunkOffset, start, Array.empty[Byte])
                     chunkOffset = end
+                    incompleteBytesLength = 0
 
                   case x =>
                 })
@@ -285,12 +289,12 @@ object AkkaXMLParser {
                     case e: XMLUpdate if e.xPath.dropRight(1) == node && e.isUpsert =>
                       val input = getUpdatedElement(e.xPath, e.attributes, e.value)(parser).getBytes
                       streamBuffer = getStreamBuffer
-                      streamBuffer ++= insertBytesInChunk(chunk, chunkOffset, start, input)
+                      streamBuffer ++= extractBytes(chunk, chunkOffset, start, input)
                       completedInstructions += e
                       chunkOffset = start
 
                     case e: XMLUpdate if e.xPath == node.slice(0, e.xPath.length) =>
-                      streamBuffer = getStreamBuffer
+                      streamBuffer = getStreamBuffer.slice(incompleteBytesLength, streamBuffer.length)
                       e.xPath match {
                         case path if path == node.toList =>
                           completedInstructions += e
@@ -313,9 +317,9 @@ object AkkaXMLParser {
                       }
 
                     case e: XMLDelete if e.xPath == node.slice(0, e.xPath.length) =>
-                      streamBuffer = getStreamBuffer
+                      streamBuffer = getStreamBuffer.slice(incompleteBytesLength, streamBuffer.length)
                       chunkOffset = end
-
+                      incompleteBytesLength = 0
                     case x =>
                   }
                 })
@@ -359,9 +363,10 @@ object AkkaXMLParser {
         }
 
         private def getStreamBuffer = {
-          if (streamBuffer.length != previousChunkSize)
-            streamBuffer.slice(0, streamBuffer.length - incompleteBytesLength)
-          else streamBuffer
+          //          if (streamBuffer.length != previousChunkSize)
+          //            streamBuffer.slice(0, streamBuffer.length - incompleteBytesLength)
+          //          else streamBuffer
+          streamBuffer
         }
 
         private def getBounds(implicit reader: AsyncXMLStreamReader[AsyncByteArrayFeeder]): (Int, Int) = {
