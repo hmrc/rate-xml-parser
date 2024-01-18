@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.akka.xml
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 
 /**
   * Created by abhishek on 12/12/16.
