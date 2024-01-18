@@ -21,4 +21,5 @@ dist
 .metals
 .vscode
 metals.sbt
-    
+.DS_Store
+project/.DS_Store
