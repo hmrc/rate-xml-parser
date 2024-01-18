@@ -22,7 +22,7 @@ import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{BeforeAndAfterEach, OptionValues}
-import uk.gov.hmrc.akka.xml._
+import uk.gov.hmrc.pekko.xml._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class OutputXMLMatchesInputXMLSpec extends AnyWordSpecLike with Matchers with OptionValues with BeforeAndAfterEach with ScalaFutures with MockitoSugar with Eventually with XMLParserFixtures {

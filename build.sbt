@@ -1,9 +1,9 @@
 import scoverage.ScoverageKeys
 import uk.gov.hmrc.DefaultBuildSettings
 
-val appName = "akka-xml-parser"
+val appName = "rate-xml-parser"
 
-ThisBuild / majorVersion := 2
+ThisBuild / majorVersion := 0
 ThisBuild / scalaVersion := "2.13.12"
 
 lazy val microservice = Project(appName, file("."))
