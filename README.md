@@ -1,7 +1,5 @@
 
-# akka-xml-parser
-
-[![Build Status](https://travis-ci.org/hmrc/akka-xml-parser.svg?branch=master)](https://travis-ci.org/hmrc/akka-xml-parser) [ ![Download](https://api.bintray.com/packages/hmrc/releases/akka-xml-parser/images/download.svg) ](https://bintray.com/hmrc/releases/akka-xml-parser/_latestVersion)
+# rate-xml-parser
 
 ### Checking performance
 
